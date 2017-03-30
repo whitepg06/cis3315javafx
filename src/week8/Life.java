@@ -1,13 +1,19 @@
 package week8;
 
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 /**
  * Program to run Conway's Game of Life simulation. This is just a rough draft
@@ -17,34 +23,97 @@ import javafx.stage.Stage;
  */
 public class Life extends Application {
 
-    int[][] cells = new int[100][100];
+    int xCellCount = 100;
+    int yCellCount = 50;
+    int CELLWIDTH = 10;
+    int CELLHEIGHT = 10;
+    int CELLFILLWIDTH = 9;
+    int CELLFILLHEIGHT = 9;
+
+    int[][] cells = new int[xCellCount][yCellCount];
     Pane pane = new Pane();
     BorderPane borderPane = new BorderPane();
+    private Timeline animation;
+    int iteration = 0;
+    Button btPause, btSlower, btFaster, btInit;
 
     @Override
     public void start(Stage primaryStage) {
         initCells();
         borderPane.setCenter(pane);
 
-        Button btn = new Button("Next Generation");
-        btn.setOnAction(e -> {
-            System.out.println("btn pressed");
-            nextGen();
+        Button btInit = new Button("Initialize");
+        btInit.setOnAction(e -> {
+            initCells();
             drawCells();
         });
-        borderPane.setBottom(btn);
 
-        Scene scene = new Scene(borderPane, 800, 800);
+        btPause = new Button("Pause");
+        btPause.setOnAction(e -> {
+            if (btPause.getText().equals("Pause")) {
+                btPause.setText("Play");
+                pause();
+            } else {
+                btPause.setText("Pause");
+                play();
+            }
+        });
+
+        btSlower = new Button("Slower");
+        btSlower.setOnAction(e -> {
+            decreaseSpeed();
+        });
+
+        btFaster = new Button("Faster");
+        btFaster.setOnAction(e -> {
+            increaseSpeed();
+        });
+
+        HBox btBox = new HBox(15);
+        btBox.setAlignment(Pos.CENTER);
+        btBox.setPadding(new Insets(5, 0, 5, 0));
+
+        btBox.getChildren().addAll(btInit, btSlower, btFaster, btPause);
+
+        borderPane.setBottom(btBox);
+
+        animation = new Timeline(
+                new KeyFrame(Duration.millis(1000), e -> {
+                    nextGen();
+                    drawCells();
+                })
+        );
+        animation.setCycleCount(Timeline.INDEFINITE);
+        initCells();
+        drawCells();
+
+        Scene scene = new Scene(borderPane);
 
         primaryStage.setTitle("Conway's Game of Life");
         primaryStage.setScene(scene);
         primaryStage.show();
-        drawCells();
+        animation.play();
+    }
+
+    public void play() {
+        animation.play();
+    }
+
+    public void pause() {
+        animation.pause();
+    }
+
+    public void increaseSpeed() {
+        animation.setRate(animation.getRate() + 0.5);
+    }
+
+    public void decreaseSpeed() {
+        animation.setRate(animation.getRate() - 0.5);
     }
 
     public void initCells() {
-        for (int y = 0; y < 100; y++) {
-            for (int x = 0; x < 100; x++) {
+        for (int y = 0; y < yCellCount; y++) {
+            for (int x = 0; x < xCellCount; x++) {
                 cells[x][y] = Math.random() > 0.5 ? 0 : 1;
             }
         }
@@ -52,9 +121,10 @@ public class Life extends Application {
 
     public void drawCells() {
         pane.getChildren().clear();
-        for (int y = 0; y < 100; y++) {
-            for (int x = 0; x < 100; x++) {
-                Rectangle rect = new Rectangle(x * 10, y * 10, 9, 9);
+        for (int y = 0; y < yCellCount; y++) {
+            for (int x = 0; x < xCellCount; x++) {
+                Rectangle rect = new Rectangle(x * CELLWIDTH, y * CELLHEIGHT,
+                        CELLFILLWIDTH, CELLFILLHEIGHT);
                 rect.setFill(cells[x][y] == 0 ? Color.WHITE : Color.BLACK);
                 pane.getChildren().add(rect);
             }
@@ -63,14 +133,14 @@ public class Life extends Application {
 
     // decide who lives and dies in the next generation
     public void nextGen() {
-        int[][] cellsng = new int[100][100];
+        int[][] cellsng = new int[xCellCount][yCellCount];
 
         // count how many living neighbors each cell has
-        for (int y = 0; y < 100; y++) {
-            for (int x = 0; x < 100; x++) {
+        for (int y = 0; y < yCellCount; y++) {
+            for (int x = 0; x < xCellCount; x++) {
 
                 int neighbors = 0;
-                if (x > 1 && x < 99 && y > 1 && y < 99) {
+                if (x > 1 && x < xCellCount - 1 && y > 1 && y < yCellCount - 1) {
 
                     // check row above cell x,y
                     if (cells[x - 1][y - 1] == 1) {
